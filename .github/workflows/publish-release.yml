@@ -1,0 +1,60 @@
+name: 发布已有安装包
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 成功的 Windows 自动打包运行 ID
+        required: true
+        default: '43853087813'
+      version:
+        description: 发布版本号（不含 v）
+        required: true
+        default: '0.1.0'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_ID: ${{ inputs.run_id }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: 核验构建来源
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$RUN_ID" > run.json
+          jq -e '.conclusion == "success" and .path == ".github/workflows/build-windows.yml" and .head_branch == "main"' run.json
+          sha=$(jq -r .head_sha run.json)
+          gh api "repos/$GH_REPO/contents/weldd/src-tauri/tauri.conf.json?ref=$sha" --jq .content | base64 -d > tauri.json
+          test "$(jq -r .version tauri.json)" = "$VERSION"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: 下载已验证安装包
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+          name: weldd-${{ inputs.version }}-windows-x64
+          path: installer
+
+      - name: 发布正式版本
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="installer/weldd_${VERSION}_x64-setup.exe"
+          test -s "$file"
+          sha256sum "$file"
+          printf 'Windows Todo 灵动岛 %s\n\n支持 Windows 10/11 x64，包含今日清单、定时提醒、历史报表与贴边停靠。\n\n安装包来自已通过的 Actions 构建：%s/%s/actions/runs/%s\n' "$VERSION" "$GITHUB_SERVER_URL" "$GH_REPO" "$RUN_ID" > notes.md
+          gh release create "v$VERSION" "$file" --target "$SOURCE_SHA" --title "weldd v$VERSION" --notes-file notes.md

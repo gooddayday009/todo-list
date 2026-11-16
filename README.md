@@ -19,11 +19,13 @@
 
 ## 下载安装包
 
-1. 打开 [Windows 自动打包](https://github.com/gooddayday009/todo-list/actions/workflows/build-windows.yml)。
-2. 进入最近一次成功的运行，在页面底部 **Artifacts** 下载 `weldd-0.1.0-windows-x64`（需要登录 GitHub）。
-3. 解压后运行 `weldd_0.1.0_x64-setup.exe`。
+[直接下载 Windows x64 安装包（v0.1.0）](https://github.com/gooddayday009/todo-list/releases/download/v0.1.0/weldd_0.1.0_x64-setup.exe)
 
-工作流在推送到 `main`、推送 `v*` 标签或手动点击 **Run workflow** 时执行，生成 Windows x64 NSIS 安装包。产物保留 30 天，后续版本号随应用配置更新；标签必须与应用版本一致，例如 `v0.1.0`。
+下载后运行 `weldd_0.1.0_x64-setup.exe` 即可安装，无需登录 GitHub。版本说明和历史安装包见 [GitHub Releases](https://github.com/gooddayday009/todo-list/releases)。
+
+开发构建可在 [Windows 自动打包](https://github.com/gooddayday009/todo-list/actions/workflows/build-windows.yml) 的成功运行页面中下载 **Artifacts**（需要登录 GitHub）。
+
+工作流在推送到 `main`、推送 `v*` 标签或手动点击 **Run workflow** 时执行，生成 Windows x64 NSIS 安装包。Actions 产物保留 30 天，Releases 中的正式安装包不受此期限影响。后续版本号随应用配置更新；标签必须与应用版本一致，例如 `v0.1.0`。
 
 ## 本地开发与构建
 

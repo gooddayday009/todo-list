@@ -1,0 +1,38 @@
+[package]
+name = "weldd"
+version = "0.2.0"
+description = "weldd — Windows 灵动岛:今日任务 / 专注 / 定时提醒"
+authors = ["weldd"]
+edition = "2021"
+
+[lib]
+# lib 名加 _lib 后缀避免与 bin 名冲突(Windows 上的已知问题)
+name = "weldd_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-store = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-dialog = "2"
+rusqlite = { version = "0.37", features = ["bundled"] }
+chrono = "0.4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 16
+lto = false
+opt-level = 3
+panic = "abort"
+strip = "debuginfo"

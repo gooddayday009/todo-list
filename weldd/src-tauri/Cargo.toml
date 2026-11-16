@@ -1,6 +1,6 @@
 [package]
 name = "weldd"
-version = "0.2.0"
+version = "0.1.0"
 description = "weldd — Windows 灵动岛:今日任务 / 专注 / 定时提醒"
 authors = ["weldd"]
 edition = "2021"

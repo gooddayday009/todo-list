@@ -1,0 +1,74 @@
+name: Windows 自动打包
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Windows x64 安装包
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: weldd
+    steps:
+      - name: 拉取源码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '11'
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 Rust 编译产物
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: weldd/src-tauri -> target
+
+      - name: 安装前端依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 检查版本一致性
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $tauriVersion = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $cargo = Get-Content src-tauri/Cargo.toml -Raw
+          $cargoVersion = [regex]::Match($cargo, '(?m)^version = "([^"]+)"').Groups[1].Value
+          if ($version -ne $tauriVersion -or $version -ne $cargoVersion) {
+            throw '前端、Rust 和安装包版本号不一致'
+          }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") {
+            throw 'Git 标签与应用版本号不一致'
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: 检查 Rust
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml
+
+      - name: 构建 Windows 安装包
+        shell: cmd
+        run: build-release.bat --ci --bundles nsis -- --locked
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: weldd-${{ steps.version.outputs.version }}-windows-x64
+          path: weldd/src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+          retention-days: 30
